@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;D%26J Work Agent&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230d0d0d&quot;,&quot;theme_color&quot;:&quot;%230d0d0d&quot;}">
+<title>D&J Work Agent</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0d0d;--bg2:#161616;--bg3:#1f1f1f;--bg4:#282828;
+  --border:#2a2a2a;--border2:#363636;
+  --text:#f0f0f0;--muted:#777;--hint:#444;
+  --green:#22c55e;--green2:#16a34a;--green-dim:#0a2016;
+  --amber:#f59e0b;--amber-dim:#241a00;
+  --red:#ef4444;--red-dim:#200a0a;
+  --blue:#3b82f6;--blue-dim:#0a1428;
+  --r:14px;--rsm:9px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
+  overflow:hidden;font-size:15px}
+
+/* ─── Layout ─── */
+#app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto}
+
+/* ─── Header ─── */
+#hdr{
+  padding:env(safe-area-inset-top,12px) 14px 10px;
+  padding-top:max(env(safe-area-inset-top),12px);
+  background:rgba(13,13,13,.92);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+  position:sticky;top:0;z-index:10;
+}
+#hdr-avatar{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,#16a34a,#0f7a36);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:700;color:#e8faf0;flex-shrink:0;
+}
+#hdr-info{flex:1;min-width:0}
+#hdr-name{font-size:15px;font-weight:600;letter-spacing:-.2px}
+#hdr-sub{font-size:11px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px}
+#status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 5px var(--green);animation:pulse 2.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+#hdr-pills{display:flex;gap:5px;flex-shrink:0}
+.hpill{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;
+  padding:4px 9px;font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap;
+  transition:border-color .15s}
+.hpill span{color:var(--text);font-weight:600;font-size:12px}
+.hpill:active{border-color:var(--green2)}
+
+/* ─── Messages ─── */
+#msgs{
+  flex:1;overflow-y:auto;padding:12px 10px 4px;
+  display:flex;flex-direction:column;gap:8px;
+  scroll-behavior:smooth;overscroll-behavior:contain;
+}
+#msgs::-webkit-scrollbar{width:2px}
+#msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.msg{display:flex;flex-direction:column;max-width:90%;animation:up .18s ease}
+@keyframes up{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.msg.u{align-self:flex-end;align-items:flex-end}
+.msg.a{align-self:flex-start;align-items:flex-start}
+
+.bubble{padding:10px 13px;border-radius:var(--r);font-size:14px;line-height:1.55;word-break:break-word}
+.msg.u .bubble{background:var(--green2);color:#e8faf0;border-bottom-right-radius:3px}
+.msg.a .bubble{background:var(--bg3);border:1px solid var(--border);border-bottom-left-radius:3px}
+.msg-time{font-size:10px;color:var(--hint);margin-top:3px;padding:0 3px}
+
+/* ─── Cards ─── */
+.card{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--rsm);padding:10px 12px;margin-top:7px;
+}
+.card-hd{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.card-hd-dot{width:6px;height:6px;border-radius:50%}
+.row{display:flex;justify-content:space-between;align-items:flex-start;
+  padding:4px 0;border-bottom:1px solid var(--border);gap:8px}
+.row:last-child{border:none;padding-bottom:0}
+.row .k{color:var(--muted);font-size:12px;flex-shrink:0}
+.row .v{font-size:13px;font-weight:500;text-align:right;word-break:break-word;max-width:60%}
+.row .v.big{font-size:16px;color:var(--green)}
+.row .v.warn{color:var(--amber)}
+.row .v.danger{color:var(--red)}
+
+.badge{display:inline-flex;align-items:center;gap:3px;
+  padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge.pend{background:var(--amber-dim);color:var(--amber)}
+.badge.done{background:var(--green-dim);color:var(--green)}
+.badge.prog{background:var(--blue-dim);color:var(--blue)}
+.badge.urg{background:var(--red-dim);color:var(--red)}
+
+.prog-wrap{margin:8px 0 4px}
+.prog-bg{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.prog-fill.ok{background:var(--green)}
+.prog-fill.warn{background:var(--amber)}
+.prog-fill.low{background:var(--red)}
+.prog-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px}
+
+/* ─── Chips ─── */
+#chips{display:flex;gap:6px;padding:6px 10px 2px;
+  overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+#chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:6px 11px;border-radius:20px;
+  border:1px solid var(--border2);background:var(--bg2);
+  font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap;
+  transition:border-color .12s,color .12s,background .12s}
+.chip:active{border-color:var(--green2);color:var(--text);background:var(--bg3)}
+
+/* ─── Input ─── */
+#inp-area{
+  padding:7px 10px max(env(safe-area-inset-bottom),10px);
+  background:rgba(13,13,13,.95);border-top:1px solid var(--border);flex-shrink:0;
+}
+#preview-bar{
+  display:none;align-items:center;gap:8px;
+  background:var(--bg3);border:1px solid var(--border2);border-radius:9px;
+  padding:6px 10px;margin-bottom:6px;
+}
+#preview-bar.on{display:flex}
+#prev-thumb{width:38px;height:38px;object-fit:cover;border-radius:6px;flex-shrink:0}
+#prev-name{font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#prev-badge{font-size:10px;background:var(--green-dim);color:var(--green);
+  padding:2px 7px;border-radius:10px;font-weight:600;flex-shrink:0}
+#btn-rm{background:none;border:none;color:var(--hint);font-size:18px;
+  cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0}
+
+#inp-row{display:flex;gap:7px;align-items:flex-end}
+#txt{
+  flex:1;background:var(--bg3);border:1.5px solid var(--border2);border-radius:22px;
+  padding:9px 14px;font-size:14px;color:var(--text);resize:none;
+  max-height:90px;min-height:40px;outline:none;font-family:inherit;line-height:1.4;
+  transition:border-color .15s;
+}
+#txt:focus{border-color:var(--green2)}
+#txt::placeholder{color:var(--hint)}
+
+.btn-ico{
+  width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:19px;transition:transform .1s,opacity .15s;
+}
+.btn-ico:active{transform:scale(.9)}
+#btn-cam{background:var(--bg3);border:1.5px solid var(--border2)}
+#btn-send{background:var(--green2)}
+#btn-send:disabled{opacity:.35;cursor:default}
+
+#file-in{display:none}
+
+/* ─── Typing ─── */
+.typing-bub{display:flex;gap:5px;padding:13px 15px;align-items:center}
+.td{width:7px;height:7px;border-radius:50%;background:var(--border2);animation:bk .85s infinite}
+.td:nth-child(2){animation-delay:.15s}
+.td:nth-child(3){animation-delay:.3s}
+@keyframes bk{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* ─── N8n status banner ─── */
+#n8n-banner{
+  background:var(--blue-dim);border-bottom:1px solid #1e3a6e;
+  padding:7px 14px;font-size:12px;color:#93c5fd;
+  display:flex;align-items:center;gap:7px;flex-shrink:0;
+}
+#n8n-banner.error{background:var(--red-dim);border-color:#6b1a1a;color:#fca5a5}
+#n8n-banner.ok{background:var(--green-dim);border-color:#14532d;color:#86efac}
+#n8n-banner.hidden{display:none}
+#n8n-banner-ico{font-size:14px}
+
+/* ─── Config modal ─── */
+#cfg-overlay{
+  display:none;position:absolute;inset:0;
+  background:rgba(0,0,0,.75);z-index:100;
+  align-items:flex-end;backdrop-filter:blur(4px);
+}
+#cfg-overlay.on{display:flex}
+#cfg-sheet{
+  width:100%;background:var(--bg2);border-radius:20px 20px 0 0;
+  padding:16px 16px max(env(safe-area-inset-bottom),16px);
+  border-top:1px solid var(--border2);
+}
+#cfg-title{font-size:16px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.cfg-label{font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.cfg-input{
+  width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:9px;
+  padding:10px 12px;font-size:13px;color:var(--text);margin-bottom:12px;
+  font-family:monospace;outline:none;
+}
+.cfg-input:focus{border-color:var(--green2)}
+#btn-save-cfg{
+  width:100%;background:var(--green2);border:none;border-radius:11px;
+  padding:12px;font-size:14px;font-weight:600;color:#e8faf0;cursor:pointer;
+}
+#btn-save-cfg:active{opacity:.85}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- N8n connection banner -->
+  <div id="n8n-banner" class="hidden">
+    <span id="n8n-banner-ico">🔗</span>
+    <span id="n8n-banner-txt">Configurando conexión con N8n...</span>
+  </div>
+
+  <!-- Header -->
+  <div id="hdr">
+    <div id="hdr-avatar">DJ</div>
+    <div id="hdr-info">
+      <div id="hdr-name">D&J Work Agent</div>
+      <div id="hdr-sub">
+        <div id="status-dot"></div>
+        <span id="hdr-status-txt">Conectado a N8n · Google Sheets</span>
+      </div>
+    </div>
+    <div id="hdr-pills">
+      <div class="hpill" id="pill-hrs" title="Horas esta semana">⏱ <span id="val-hrs">—</span></div>
+      <div class="hpill" id="pill-wo" title="Work Orders">📋 <span id="val-wo">—</span></div>
+      <div class="hpill" onclick="openCfg()" title="Configurar N8n">⚙️</div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="msgs"></div>
+
+  <!-- Quick chips -->
+  <div id="chips">
+    <div class="chip" onclick="qs('¿Cuántas horas llevo esta semana?')">⏱ Mis horas</div>
+    <div class="chip" onclick="qs('Muéstrame las WOs de hoy')">📋 WOs hoy</div>
+    <div class="chip" onclick="qs('Registrar Time In ahora')">🟢 Time In</div>
+    <div class="chip" onclick="qs('Registrar Time Out ahora')">🔴 Time Out</div>
+    <div class="chip" onclick="qs('¿Cuántas horas me faltan para las 40 de esta semana?')">🎯 Meta 40h</div>
+    <div class="chip" onclick="qs('Dame el reporte completo de esta semana')">📊 Reporte</div>
+    <div class="chip" onclick="qs('Muéstrame todas mis WOs pendientes')">📌 Pendientes</div>
+    <div class="chip" onclick="qs('Quiero completar una WO')">✅ Completar</div>
+    <div class="chip" onclick="qs('Registrar millaje del día')">🛣️ Millaje</div>
+  </div>
+
+  <!-- Input -->
+  <div id="inp-area">
+    <div id="preview-bar">
+      <img id="prev-thumb" src="" alt="">
+      <span id="prev-name">foto_wo.jpg</span>
+      <span id="prev-badge">WO foto</span>
+      <button id="btn-rm" onclick="rmImg()">✕</button>
+    </div>
+    <div id="inp-row">
+      <button class="btn-ico" id="btn-cam" onclick="document.getElementById('file-in').click()" title="Foto de WO">📎</button>
+      <textarea id="txt" placeholder="Escríbeme o manda foto de la WO..." rows="1"
+        onkeydown="onKey(event)" oninput="resize(this)"></textarea>
+      <button class="btn-ico" id="btn-send" onclick="send()" title="Enviar">➤</button>
+    </div>
+  </div>
+
+  <input type="file" id="file-in" accept="image/*" capture="environment" onchange="onImg(event)">
+
+  <!-- Config modal -->
+  <div id="cfg-overlay" onclick="if(event.target===this)closeCfg()">
+    <div id="cfg-sheet">
+      <div id="cfg-title">
+        Configuración N8n
+        <button onclick="closeCfg()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0">✕</button>
+      </div>
+      <div class="cfg-label">URL del Webhook de N8n</div>
+      <input class="cfg-input" id="cfg-url" type="url"
+        placeholder="https://tu-n8n.app.n8n.cloud/webhook/chat-agent">
+      <div class="cfg-label">Tu nombre</div>
+      <input class="cfg-input" id="cfg-name" type="text" placeholder="Reiner" value="Reiner">
+      <button id="btn-save-cfg" onclick="saveCfg()">Guardar y conectar</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────
+let N8N_URL  = localStorage.getItem('dj_n8n_url')  || '';
+let USERNAME = localStorage.getItem('dj_username')  || 'Reiner';
+let history  = [];
+let imgB64   = null;
+let imgType  = 'image/jpeg';
+let imgFile  = null;
+let busy     = false;
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const ts = () => new Date().toLocaleTimeString('es-US',{hour:'2-digit',minute:'2-digit'});
+
+function showBanner(msg, type=''){
+  const b = $('n8n-banner');
+  b.className = type;
+  $('n8n-banner-ico').textContent = type==='ok'?'✅':type==='error'?'❌':'🔗';
+  $('n8n-banner-txt').textContent = msg;
+  if(type==='ok') setTimeout(()=>b.classList.add('hidden'), 3000);
+}
+
+function setBusy(v){
+  busy = v;
+  $('btn-send').disabled = v;
+}
+
+// ── Config modal ─────────────────────────────────────────────────────────
+function openCfg(){
+  $('cfg-url').value  = N8N_URL;
+  $('cfg-name').value = USERNAME;
+  $('cfg-overlay').classList.add('on');
+}
+function closeCfg(){ $('cfg-overlay').classList.remove('on'); }
+function saveCfg(){
+  N8N_URL  = $('cfg-url').value.trim();
+  USERNAME = $('cfg-name').value.trim() || 'Reiner';
+  localStorage.setItem('dj_n8n_url',  N8N_URL);
+  localStorage.setItem('dj_username', USERNAME);
+  closeCfg();
+  showBanner('Conectado a N8n ✓', 'ok');
+  $('hdr-status-txt').textContent = 'Conectado a N8n · Google Sheets';
+  updateStats();
+}
+
+// ── Image handling ───────────────────────────────────────────────────────
+function onImg(e){
+  const f = e.target.files[0];
+  if(!f) return;
+  imgFile = f;
+  imgType = f.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imgB64 = ev.target.result.split(',')[1];
+    $('prev-thumb').src = ev.target.result;
+    $('prev-name').textContent = f.name;
+    $('preview-bar').classList.add('on');
+  };
+  reader.readAsDataURL(f);
+  e.target.value = '';
+}
+function rmImg(){
+  imgB64 = null; imgFile = null;
+  $('preview-bar').classList.remove('on');
+  $('prev-thumb').src = '';
+}
+
+// ── Messages ─────────────────────────────────────────────────────────────
+function addMsg(role, content, time){
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${role}`;
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.innerHTML = role === 'a' ? renderContent(content) : esc(content);
+  const t = document.createElement('div');
+  t.className = 'msg-time';
+  t.textContent = time || ts();
+  wrap.append(bub, t);
+  $('msgs').appendChild(wrap);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+function renderContent(txt){
+  // strip n8n_action JSON before rendering
+  const clean = txt.replace(/\{"n8n_action"[\s\S]*?\}(?=\s*$)/m,'').trim();
+
+  // try to find embedded card JSON
+  const m = clean.match(/\{["']?type["']?\s*:\s*["'](\w+)["'][\s\S]*?\}/);
+  let cardHTML = '';
+  let textPart = clean;
+  if(m){
+    try {
+      const obj = JSON.parse(m[0]);
+      cardHTML = buildCard(obj);
+      textPart = clean.replace(m[0],'').trim();
+    } catch(_){}
+  }
+
+  let html = '';
+  if(textPart) html += `<div style="margin-bottom:${cardHTML?'8px':'0'}">${fmt(textPart)}</div>`;
+  html += cardHTML;
+  return html;
+}
+
+function fmt(s){
+  return s
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code style="background:var(--bg4);padding:1px 5px;border-radius:4px;font-size:12px;font-family:monospace">$1</code>')
+    .replace(/\n/g,'<br>');
+}
+
+function buildCard(obj){
+  const d = obj.data || {};
+  if(obj.type === 'wo_card'){
+    const st = d.status || 'PENDIENTE';
+    const bc = st==='COMPLETADO'?'done':st==='EN_PROGRESO'?'prog':d.priority==='URGENT'?'urg':'pend';
+    return `<div class="card">
+      <div class="card-hd"><div class="card-hd-dot" style="background:var(--green)"></div>Work Order registrada</div>
+      <div class="row"><span class="k">WO #</span><span class="v">${d.wo_number||'—'}</span></div>
+      <div class="row"><span class="k">Job Site</span><span class="v">${d.job_site||'—'}</span></div>
+      <div class="row"><span class="k">Dirección</span><span class="v" style="font-size:12px">${d.address||'—'}</span></div>
+      <div class="row"><span class="k">Teléfono</span><span class="v">${d.phone||'—'}</span></div>
+      <div class="row"><span class="k">Vence</span><span class="v">${d.due_date||'—'}</span></div>
+      <div class="row"><span class="k">Status</span><span class="v"><span class="badge ${bc}">${st}</span></span></div>
+    </div>`;
+  }
+  if(obj.type === 'time_card'){
+    return `<div class="card">
+      <div class="card-hd"><div class="card-hd-dot" style="background:var(--blue)"></div>Registro de tiempo</div>
+      <div class="row"><span class="k">WO #</span><span class="v">${d.wo_number||'—'}</span></div>
+      <div class="row"><span class="k">Time In</span><span class="v">${d.time_in||'—'}</span></div>
+      <div class="row"><span class="k">Time Out</span><span class="v">${d.time_out||'—'}</span></div>
+      <div class="row"><span class="k">Horas trabajadas</span><span class="v big">${d.hours_worked||'—'}</span></div>
+      <div class="row"><span class="k">Horas viaje</span><span class="v">${d.travel_hours||'0'}</span></div>
+      <div class="row"><span class="k">Total esta WO</span><span class="v big">${d.total_hours||'—'}</span></div>
+    </div>`;
+  }
+  if(obj.type === 'weekly_card'){
+    const total = parseFloat(d.total_hours)||0;
+    const pct   = Math.min(100, Math.round((total/40)*100));
+    const cls   = pct>=100?'ok':pct>=60?'warn':'low';
+    return `<div class="card">
+      <div class="card-hd"><div class="card-hd-dot" style="background:var(--amber)"></div>Resumen semanal</div>
+      <div class="row"><span class="k">Horas trabajadas</span><span class="v">${d.hours_worked||0}h</span></div>
+      <div class="row"><span class="k">Horas de viaje</span><span class="v">${d.travel_hours||0}h</span></div>
+      <div class="row"><span class="k">Total acumulado</span><span class="v big">${total.toFixed(1)}h / 40h</span></div>
+      <div class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill ${cls}" style="width:${pct}%"></div></div>
+        <div class="prog-label"><span>${pct}% de la meta</span><span>${Math.max(0,40-total).toFixed(1)}h restantes</span></div>
+      </div>
+      <div class="row"><span class="k">WOs completadas</span><span class="v">${d.wo_count||0}</span></div>
+      <div class="row"><span class="k">Millas semana</span><span class="v">${d.total_miles||0} mi</span></div>
+    </div>`;
+  }
+  if(obj.type === 'wo_list'){
+    const list = Array.isArray(obj.data) ? obj.data : [];
+    if(!list.length) return `<div class="card"><div style="color:var(--muted);text-align:center;padding:8px 0;font-size:13px">Sin WOs registradas</div></div>`;
+    const rows = list.map(w=>{
+      const bc = w.status==='COMPLETADO'?'done':w.status==='EN_PROGRESO'?'prog':'pend';
+      return `<div class="row">
+        <span class="k" style="font-size:12px">#${w.wo_number||'?'} &nbsp;${w.job_site||''}</span>
+        <span class="badge ${bc}" style="font-size:10px">${w.status||'PEND'}</span>
+      </div>`;
+    }).join('');
+    return `<div class="card"><div class="card-hd"><div class="card-hd-dot" style="background:var(--muted)"></div>Work Orders (${list.length})</div>${rows}</div>`;
+  }
+  return '';
+}
+
+// typing indicator
+function showTyping(){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg a'; wrap.id = 'typing';
+  const bub = document.createElement('div');
+  bub.className = 'bubble typing-bub';
+  bub.innerHTML = '<div class="td"></div><div class="td"></div><div class="td"></div>';
+  wrap.appendChild(bub);
+  $('msgs').appendChild(wrap);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+}
+function rmTyping(){ const el=$('typing'); if(el) el.remove(); }
+
+// ── Stats refresh — solo actualiza desde respuestas reales, no llama sola ──
+function updateStatsFromResponse(db_summary){
+  if(!db_summary) return;
+  $('val-hrs').textContent = (db_summary.total_hrs_week || '0') + 'h';
+  $('val-wo').textContent  = db_summary.total_wo || '0';
+}
+
+// ── Send ──────────────────────────────────────────────────────────────────
+async function send(){
+  const txt = $('txt').value.trim();
+  if((!txt && !imgB64) || busy) return;
+
+  if(!N8N_URL){
+    openCfg();
+    addMsg('a','⚙️ Primero configura la URL de tu N8n usando el botón ⚙️ arriba.');
+    return;
+  }
+
+  const userText = txt || (imgB64 ? '📎 Foto de Work Order' : '');
+  addMsg('u', userText);
+  history.push({ role:'user', content: imgB64
+    ? [{type:'image',source:{type:'base64',media_type:imgType,data:imgB64}},{type:'text',text:txt||'Procesa esta Work Order.'}]
+    : txt
+  });
+
+  $('txt').value = '';
+  $('txt').style.height = 'auto';
+  rmImg();
+  showTyping();
+  setBusy(true);
+
+  try {
+    const res = await fetch(N8N_URL, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        message:      txt || '',
+        image_base64: imgB64,
+        image_type:   imgType,
+        history:      history.slice(-10),
+        action:       'chat',
+        username:     USERNAME
+      })
+    });
+
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const reply = data.reply || data.message || 'Sin respuesta del agente.';
+
+    rmTyping();
+    addMsg('a', reply);
+    history.push({ role:'assistant', content: reply });
+
+    // update header stats
+    if(data.db_summary){
+      $('val-hrs').textContent = data.db_summary.total_hrs_week + 'h';
+      $('val-wo').textContent  = data.db_summary.total_wo;
+    }
+
+    updateStatsFromResponse(data.db_summary);
+    showBanner('Guardado en Google Sheets ✓', 'ok');
+
+  } catch(err){
+    rmTyping();
+    let diag = '';
+    if(err.message.includes('404'))       diag = '**404** — El workflow no está activo en N8n.\nActívalo con el toggle verde (esquina superior derecha del editor).';
+    else if(err.message.includes('Failed') || err.message.includes('NetworkError')) diag = '**Sin conexión** — Verifica tu URL y que N8n esté corriendo.';
+    else if(err.message.includes('CORS')) diag = '**CORS** — En N8n, en el nodo Webhook activa "Allow All Origins".';
+    else diag = `Error: ${err.message}`;
+    addMsg('a', `❌ No pude conectar con N8n.\n\n${diag}\n\nURL configurada:\n\`${N8N_URL}\``);
+    showBanner('Error — ver mensaje en el chat', 'error');
+  } finally {
+    setBusy(false);
+  }
+}
+
+function qs(t){ $('txt').value=t; send(); }
+function onKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }
+function resize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,90)+'px'; }
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', ()=>{
+  if(!N8N_URL){
+    showBanner('Configura tu URL de N8n pulsando ⚙️','');
+    $('n8n-banner').classList.remove('hidden');
+    setTimeout(openCfg, 800);
+  } else {
+    showBanner('URL configurada — envía un mensaje para probar','ok');
+  }
+
+  setTimeout(()=>{
+    addMsg('a',
+      `👋 Hola ${USERNAME}, soy tu agente D&J.\n\n`+
+      `Estoy conectado a **N8n** y **Google Sheets** — todo lo que me digas se guarda automáticamente.\n\n`+
+      `📸 Mándame una **foto de la WO** y la registro solo\n`+
+      `⏱ Di **"llegué"** o **"salí"** y registro tus horas\n`+
+      `📊 Pídeme el **reporte** y te digo dónde vas vs las 40h\n`+
+      `✏️ Dime cualquier **corrección** y la actualizo en Sheets\n\n`+
+      (N8N_URL ? '✅ URL configurada. Envíame un mensaje para probar.' : '⚙️ Pulsa el engranaje arriba para pegar tu URL de N8n.')
+    );
+  }, 400);
+});
+</script>
+</body>
+</html>
